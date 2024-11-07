@@ -1,23 +1,30 @@
-# Usa una imagen de Node.js como base
-FROM node:16
+# Primera etapa: compilación
+FROM node:18 AS build
 
-# Establece el directorio de trabajo en /app
+# Establece el directorio de trabajo
 WORKDIR /app
 
-# Copia los archivos de dependencias
+# Copia los archivos de dependencias e instala todas las dependencias
 COPY package*.json ./
+RUN npm install
 
-# Instala solo las dependencias de producción
-RUN npm install --only=production
-
-# Copia todo el código fuente al contenedor
+# Copia todo el código fuente y compila TypeScript
 COPY . .
-
-# Compila el código TypeScript a JavaScript
 RUN npm run build
 
-# Expone el puerto 3000 para la API
+# Segunda etapa: entorno de producción
+FROM node:18 AS production
+
+# Establece el directorio de trabajo
+WORKDIR /app
+
+# Copia solo los archivos necesarios desde la etapa de construcción
+COPY package*.json ./
+COPY --from=build /app/dist ./dist
+RUN npm install --only=production
+
+# Expone el puerto de la aplicación
 EXPOSE 3000
 
-# Comando para ejecutar la API en producción
-CMD ["npm", "run", "start"]
+# Comando para ejecutar la API
+CMD ["node", "dist/server.js"]
