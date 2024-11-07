@@ -1,25 +1,27 @@
 import { AppDataSource } from "../config/database";
 import { Client } from "../models/Client";
 import { Message } from "../models/Message";
-import { LessThan } from "typeorm";
+import { LessThan, Repository } from "typeorm";
 import { ClientInput, MessageInput } from "../types";
 
-const clientRepository = AppDataSource.getRepository(Client);
-const messageRepository = AppDataSource.getRepository(Message);
+const clientRepository: Repository<Client> =
+  AppDataSource.getRepository(Client);
+const messageRepository: Repository<Message> =
+  AppDataSource.getRepository(Message);
 
 export class ClientService {
-  static async getAllClients() {
+  static async getAllClients(): Promise<Client[]> {
     return await clientRepository.find();
   }
 
-  static async getClientDetails(clientId: number) {
+  static async getClientDetails(clientId: number): Promise<Client | null> {
     return await clientRepository.findOne({
       where: { id: clientId },
       relations: ["messages", "debts"],
     });
   }
 
-  static async getClientsForFollowUp() {
+  static async getClientsForFollowUp(): Promise<Client[]> {
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
@@ -33,18 +35,20 @@ export class ClientService {
     });
   }
 
-  static async createClient(data: ClientInput) {
+  static async createClient(data: ClientInput): Promise<Client> {
     const { name, rut, messages, debts } = data;
 
-    const mappedMessages = messages?.map((msg) => ({
-      ...msg,
-      sentAt: new Date(msg.sentAt),
-    }));
+    const mappedMessages: MessageInput[] =
+      messages?.map((msg) => ({
+        ...msg,
+        sentAt: new Date(msg.sentAt),
+      })) || [];
 
-    const mappedDebts = debts?.map((debt) => ({
-      ...debt,
-      dueDate: new Date(debt.dueDate),
-    }));
+    const mappedDebts =
+      debts?.map((debt) => ({
+        ...debt,
+        dueDate: new Date(debt.dueDate),
+      })) || [];
 
     const newClient = clientRepository.create({
       name,
@@ -56,7 +60,10 @@ export class ClientService {
     return await clientRepository.save(newClient);
   }
 
-  static async addMessageToClient(clientId: number, messageData: MessageInput) {
+  static async addMessageToClient(
+    clientId: number,
+    messageData: MessageInput
+  ): Promise<Message> {
     const client = await clientRepository.findOneBy({ id: clientId });
     if (!client) {
       throw new Error("Client not found");
