@@ -1,7 +1,7 @@
 import { AppDataSource } from "../config/database";
 import { Client } from "../models/Client";
 import { Message } from "../models/Message";
-import { EntityNotFoundError, Repository } from "typeorm";
+import { Repository } from "typeorm";
 import { ClientInput, DebtInput, MessageInput } from "../types";
 import { openai } from "../config/openai";
 import { generateMessagePrompt } from "../prompts/generateMessagePrompt";
