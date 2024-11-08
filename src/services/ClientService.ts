@@ -3,6 +3,8 @@ import { Client } from "../models/Client";
 import { Message } from "../models/Message";
 import { LessThan, Repository } from "typeorm";
 import { ClientInput, DebtInput, MessageInput } from "../types";
+import { openai } from "../config/openai";
+import { generateMessagePrompt } from "../prompts/generateMessagePrompt";
 
 const clientRepository: Repository<Client> =
   AppDataSource.getRepository(Client);
@@ -76,5 +78,32 @@ export class ClientService {
     message.client = client;
 
     return await messageRepository.save(message);
+  }
+
+  static async generateMessage(client: Client) {
+    const { name, debts, messages } = client;
+    const hasDebts = debts && debts.length > 0;
+    const recentMessages = messages
+      .slice(-3)
+      .map((msg) => `[${msg.role}]: ${msg.text}`)
+      .join("\n");
+
+    const prompt = generateMessagePrompt(name, hasDebts, recentMessages);
+    try {
+      const response = await openai.chat.completions.create({
+        messages: [{ role: "system", content: prompt }],
+        model: "gpt-4o-mini",
+        max_tokens: 150,
+        temperature: 0.7,
+        top_p: 1,
+        frequency_penalty: 0.5,
+        presence_penalty: 0.3,
+      });
+
+      return response.choices[0].message?.content?.trim();
+    } catch (error) {
+      console.error("Error generating AI message:", error);
+      throw new Error("Error generating message");
+    }
   }
 }
