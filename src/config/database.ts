@@ -28,4 +28,10 @@ export const AppDataSource = new DataSource({
       ? "dist/migrations/*.js"
       : "src/migrations/*.ts",
   ],
+  extra: {
+    ssl:
+      process.env.NODE_ENV === "production"
+        ? { rejectUnauthorized: false }
+        : false,
+  },
 });
