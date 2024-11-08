@@ -2,7 +2,7 @@ import { AppDataSource } from "../config/database";
 import { Client } from "../models/Client";
 import { Message } from "../models/Message";
 import { LessThan, Repository } from "typeorm";
-import { ClientInput, MessageInput } from "../types";
+import { ClientInput, DebtInput, MessageInput } from "../types";
 
 const clientRepository: Repository<Client> =
   AppDataSource.getRepository(Client);
@@ -44,13 +44,13 @@ export class ClientService {
         sentAt: new Date(msg.sentAt),
       })) || [];
 
-    const mappedDebts =
+    const mappedDebts: DebtInput[] =
       debts?.map((debt) => ({
         ...debt,
         dueDate: new Date(debt.dueDate),
       })) || [];
 
-    const newClient = clientRepository.create({
+    const newClient: Client = clientRepository.create({
       name,
       rut,
       messages: mappedMessages,
@@ -69,7 +69,7 @@ export class ClientService {
       throw new Error("Client not found");
     }
 
-    const message = new Message();
+    const message: Message = new Message();
     message.text = messageData.text;
     message.sentAt = new Date(messageData.sentAt);
     message.role = messageData.role;
