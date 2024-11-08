@@ -18,4 +18,4 @@ RUN npm install --only=production
 
 EXPOSE 3000
 
-CMD ["node", "dist/server.js"]
+CMD ["sh", "-c", "node dist/migration-run.js && node dist/server.js"]
