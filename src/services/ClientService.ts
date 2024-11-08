@@ -1,10 +1,11 @@
 import { AppDataSource } from "../config/database";
 import { Client } from "../models/Client";
 import { Message } from "../models/Message";
-import { Repository } from "typeorm";
+import { EntityNotFoundError, Repository } from "typeorm";
 import { ClientInput, DebtInput, MessageInput } from "../types";
 import { openai } from "../config/openai";
 import { generateMessagePrompt } from "../prompts/generateMessagePrompt";
+import { validateAndSanitizeRut } from "../utils/validation";
 
 const clientRepository: Repository<Client> =
   AppDataSource.getRepository(Client);
@@ -41,6 +42,18 @@ export class ClientService {
   static async createClient(data: ClientInput): Promise<Client> {
     const { name, rut, messages, debts } = data;
 
+    const validRut = validateAndSanitizeRut(rut);
+    if (!validRut) {
+      throw new Error("Invalid RUT");
+    }
+
+    const existingClient = await clientRepository.findOneBy({ rut: validRut });
+    if (existingClient) {
+      const error = new Error("A client with this RUT already exists");
+      error.name = "DuplicateRutError";
+      throw error;
+    }
+
     const mappedMessages: MessageInput[] =
       messages?.map((msg) => ({
         ...msg,
@@ -55,7 +68,7 @@ export class ClientService {
 
     const newClient: Client = clientRepository.create({
       name,
-      rut,
+      rut: validRut,
       messages: mappedMessages,
       debts: mappedDebts,
     });
@@ -100,7 +113,6 @@ export class ClientService {
       requiresFollowUp
     );
 
-    console.log("Prompt:", prompt);
     try {
       const response = await openai.chat.completions.create({
         messages: [{ role: "system", content: prompt }],

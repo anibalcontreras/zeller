@@ -24,10 +24,21 @@ export class ClientController {
   }
 
   static async createClient(ctx: Context) {
-    const data = ctx.request.body as ClientInput;
-    const newClient = await ClientService.createClient(data);
-    ctx.status = 201;
-    ctx.body = newClient;
+    try {
+      const data = ctx.request.body as ClientInput;
+      const newClient = await ClientService.createClient(data);
+      ctx.status = 201;
+      ctx.body = newClient;
+    } catch (error) {
+      const err = error as Error;
+      if (err.name === "DuplicateRutError") {
+        ctx.status = 409;
+        ctx.body = { error: err.message };
+      } else {
+        ctx.status = 400;
+        ctx.body = { error: err.message };
+      }
+    }
   }
 
   static async addMessageToClient(ctx: Context) {
