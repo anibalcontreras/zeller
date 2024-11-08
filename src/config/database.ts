@@ -13,6 +13,6 @@ export const AppDataSource = new DataSource({
   username: process.env.DATABASE_USERNAME,
   password: process.env.DATABASE_PASSWORD,
   database: process.env.DATABASE_NAME,
-  synchronize: false, // Cambia a false en producción y usa migraciones
+  synchronize: true, // Cambiar a false en producción y usar migraciones
   entities: [__dirname + "/../models/*.ts"],
 });
