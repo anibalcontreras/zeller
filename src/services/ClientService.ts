@@ -82,19 +82,30 @@ export class ClientService {
   }
 
   static async generateMessage(client: Client) {
-    const { name, debts, messages } = client;
+    const { id, name, debts, messages } = client;
     const hasDebts = debts && debts.length > 0;
     const recentMessages = messages
       .slice(-3)
       .map((msg) => `[${msg.role}]: ${msg.text}`)
       .join("\n");
 
-    const prompt = generateMessagePrompt(name, hasDebts, recentMessages);
+    const clientsForFollowUp = await ClientService.getClientsForFollowUp();
+    const followUpClientIds = new Set(clientsForFollowUp.map((c) => c.id));
+    const requiresFollowUp = followUpClientIds.has(id);
+
+    const prompt = generateMessagePrompt(
+      name,
+      hasDebts,
+      recentMessages,
+      requiresFollowUp
+    );
+
+    console.log("Prompt:", prompt);
     try {
       const response = await openai.chat.completions.create({
         messages: [{ role: "system", content: prompt }],
         model: "gpt-4o-mini",
-        max_tokens: 150,
+        max_tokens: 250,
         temperature: 0.7,
         top_p: 1,
         frequency_penalty: 0.5,
