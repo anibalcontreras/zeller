@@ -1,9 +1,6 @@
 import { Context } from "koa";
 import { ClientService } from "../services/ClientService";
 import { ClientInput, MessageInput } from "../types";
-import { OpenAI } from "openai";
-
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export class ClientController {
   static async getAllClients(ctx: Context) {
