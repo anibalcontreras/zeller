@@ -23,4 +23,9 @@ export const AppDataSource = new DataSource({
       ? __dirname + "/../models/*.js" // In production, use JS files
       : __dirname + "/../models/*.ts", // In development, use TS files
   ],
+  migrations: [
+    process.env.NODE_ENV === "production"
+      ? "dist/migrations/*.js"
+      : "src/migrations/*.ts",
+  ],
 });
