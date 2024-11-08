@@ -1,5 +1,5 @@
 import { Context } from "koa";
-import { ClientService } from "services/ClientService";
+import { ClientService } from "../services/ClientService";
 import { ClientInput, MessageInput } from "../types";
 
 export class ClientController {
@@ -24,10 +24,21 @@ export class ClientController {
   }
 
   static async createClient(ctx: Context) {
-    const data = ctx.request.body as ClientInput;
-    const newClient = await ClientService.createClient(data);
-    ctx.status = 201;
-    ctx.body = newClient;
+    try {
+      const data = ctx.request.body as ClientInput;
+      const newClient = await ClientService.createClient(data);
+      ctx.status = 201;
+      ctx.body = newClient;
+    } catch (error) {
+      const err = error as Error;
+      if (err.name === "DuplicateRutError") {
+        ctx.status = 409;
+        ctx.body = { error: err.message };
+      } else {
+        ctx.status = 400;
+        ctx.body = { error: err.message };
+      }
+    }
   }
 
   static async addMessageToClient(ctx: Context) {
@@ -42,6 +53,26 @@ export class ClientController {
     } catch (error) {
       const err = error as Error;
       ctx.status = 404;
+      ctx.body = { error: err.message };
+    }
+  }
+
+  static async generateMessageForClient(ctx: Context) {
+    const clientId = Number(ctx.params.id);
+    const client = await ClientService.getClientDetails(clientId);
+
+    if (!client) {
+      ctx.status = 404;
+      ctx.body = { error: "Client not found" };
+      return;
+    }
+
+    try {
+      const generatedMessage = await ClientService.generateMessage(client);
+      ctx.body = { text: generatedMessage };
+    } catch (error) {
+      const err = error as Error;
+      ctx.status = 500;
       ctx.body = { error: err.message };
     }
   }
