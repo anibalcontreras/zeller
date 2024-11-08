@@ -1,7 +1,7 @@
 import { AppDataSource } from "../config/database";
 import { Client } from "../models/Client";
 import { Message } from "../models/Message";
-import { LessThan, Repository } from "typeorm";
+import { Repository } from "typeorm";
 import { ClientInput, DebtInput, MessageInput } from "../types";
 import { openai } from "../config/openai";
 import { generateMessagePrompt } from "../prompts/generateMessagePrompt";
@@ -23,18 +23,19 @@ export class ClientService {
     });
   }
 
-  static async getClientsForFollowUp(): Promise<Client[]> {
+  static async getClientsForFollowUp(): Promise<Partial<Client>[]> {
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-    return await clientRepository.find({
-      where: {
-        messages: {
-          sentAt: LessThan(sevenDaysAgo),
-        },
-      },
-      relations: ["messages"],
-    });
+    const clients = await clientRepository
+      .createQueryBuilder("client")
+      .leftJoin("client.messages", "message")
+      .groupBy("client.id")
+      .having("MAX(message.sentAt) < :sevenDaysAgo", { sevenDaysAgo })
+      .select(["client.id AS id", "client.name AS name", "client.rut AS rut"])
+      .getRawMany();
+
+    return clients;
   }
 
   static async createClient(data: ClientInput): Promise<Client> {
